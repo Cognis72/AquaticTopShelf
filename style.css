@@ -721,6 +721,35 @@ section {
     text-align: center;
 }
 
+.map-container {
+    position: relative;
+}
+
+.map-link {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.map-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, #88c9bf 0%, #6eb5ab 100%);
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 25px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(136, 201, 191, 0.3);
+}
+
+.map-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(136, 201, 191, 0.4);
+    background: linear-gradient(135deg, #6eb5ab 0%, #5a9d94 100%);
+}
+
 .map-placeholder {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 15px;
