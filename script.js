@@ -108,16 +108,26 @@ function renderFishCards() {
             console.warn(`Fish at index ${index} is missing required fields:`, fish);
             return;
         }
+        
+        // Ensure videoFile exists, use empty string if not
+        const videoFile = fish.videoFile || '';
 
         cardsHTML += `
             <div class="fish-card" data-index="${index}">
-                <img 
-                    src="${escapeHtml(fish.image)}" 
-                    alt="${escapeHtml(fish.description)}"
-                    onerror="handleImageError(this)"
-                    loading="lazy"
-                >
+                <div class="fish-image-container" onclick="playFishVideo('${videoFile}', '${escapeHtml(fish.description)}')">
+                    <img 
+                        src="${escapeHtml(fish.image)}" 
+                        alt="${escapeHtml(fish.description)}"
+                        onerror="handleImageError(this)"
+                        loading="lazy"
+                    >
+                    <div class="video-play-overlay">
+                        <i class="fas fa-play"></i>
+                        <span>ดูวิดีโอ</span>
+                    </div>
+                </div>
                 <div class="desc">
+                    ${fish.title ? `<h2 class="fish-title">${escapeHtml(fish.title)}</h2>` : ''}
                     <p>${escapeHtml(fish.description)}</p>
                     <strong>${escapeHtml(fish.price)}</strong>
                     <a href="https://line.me/ti/p/@834wrclo" 
@@ -397,12 +407,141 @@ window.addEventListener('offline', function() {
     // You could show an offline indicator here
 });
 
+/**
+ * Play fish video in modal
+ */
+function playFishVideo(videoFile, fishDescription) {
+    console.log('Playing video:', videoFile, 'for fish:', fishDescription);
+    
+    // Check if videoFile is valid
+    if (!videoFile || videoFile === '') {
+        alert('วิดีโอของ ' + fishDescription + ' จะมาเร็วๆ นี้! \nติดต่อทาง LINE เพื่อดูปลาตัวจริง @834wrclo');
+        return;
+    }
+    
+    const modal = document.getElementById('videoModal');
+    const videoElement = document.getElementById('videoPlayer');
+    
+    if (!modal || !videoElement) {
+        console.error('Video modal or player not found');
+        alert('เกิดข้อผิดพลาดในการเล่นวิดีโอ');
+        return;
+    }
+    
+    // Reset video element
+    videoElement.pause();
+    videoElement.currentTime = 0;
+    videoElement.removeAttribute('data-retry');
+    
+    // Set the video source
+    videoElement.src = videoFile;
+    console.log('Video source set to:', videoElement.src);
+    
+    // Show the modal
+    modal.style.display = 'block';
+    
+    // Prevent body scrolling
+    document.body.style.overflow = 'hidden';
+    
+    // Show loading indicator
+    const loadingDiv = document.getElementById('videoLoading');
+    if (loadingDiv) {
+        loadingDiv.style.display = 'block';
+    }
+    
+    // Remove any existing event listeners to prevent conflicts
+    videoElement.onloadstart = null;
+    videoElement.onloadeddata = null;
+    videoElement.onerror = null;
+    
+    // Handle video loading events with simple event handlers
+    videoElement.onloadstart = () => {
+        console.log('Video loading started');
+        if (loadingDiv) loadingDiv.style.display = 'block';
+    };
+    
+    videoElement.onloadeddata = () => {
+        console.log('Video data loaded');
+        if (loadingDiv) loadingDiv.style.display = 'none';
+    };
+    
+    videoElement.onerror = (e) => {
+        console.error('Video error:', e);
+        if (loadingDiv) loadingDiv.style.display = 'none';
+        console.log('Video failed to load, user can try again');
+    };
+    
+    // Prevent fullscreen behavior on mobile
+    videoElement.addEventListener('webkitbeginfullscreen', function(e) {
+        e.preventDefault();
+    });
+    
+    videoElement.addEventListener('webkitendfullscreen', function(e) {
+        e.preventDefault();
+    });
+    
+    // Load and play the video
+    videoElement.load();
+    
+    // Try to play after a small delay to ensure loading
+    setTimeout(() => {
+        videoElement.play().then(() => {
+            console.log('Video playing successfully');
+            if (loadingDiv) loadingDiv.style.display = 'none';
+        }).catch(error => {
+            console.error('Error playing video:', error);
+            if (loadingDiv) loadingDiv.style.display = 'none';
+            alert('ไม่สามารถเล่นวิดีโอได้ กรุณาลองอีกครั้ง\nError: ' + error.message);
+            closeVideo();
+        });
+    }, 100);
+    
+    // Track video view
+    trackLineClick('Video viewed: ' + fishDescription);
+}
+
+/**
+ * Close video modal
+ */
+function closeVideo() {
+    const modal = document.getElementById('videoModal');
+    const videoElement = document.getElementById('videoPlayer');
+    
+    // Stop and reset the video
+    videoElement.pause();
+    videoElement.currentTime = 0;
+    videoElement.src = '';
+    
+    // Hide the modal
+    modal.style.display = 'none';
+    
+    // Restore body scrolling
+    document.body.style.overflow = 'auto';
+    
+    // Scroll to top of page (home section)
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+}
+
+/**
+ * Handle escape key to close video
+ */
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeVideo();
+    }
+});
+
 // Export functions for testing if needed
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         loadFishData,
         renderFishCards,
         escapeHtml,
-        trackLineClick
+        trackLineClick,
+        playFishVideo,
+        closeVideo
     };
 }
